@@ -11,13 +11,19 @@ def makedirs(path):
         except FileExistsError:
             pass
 
+
 def copy_files(src_dir, dst_dir, pattern):
     """
     Copy all files pattern.
     """
     import glob
     import shutil
-    for src_file in glob.glob(os.path.join(src_dir, )):
+
+    for src_file in glob.glob(
+        os.path.join(
+            src_dir,
+        )
+    ):
         dir_, fname = os.path.split(src_file)
         # dst_file = os.path.join(os.path.dirname(dir_), fname)
         dst_file = os.path.join(dst_dir, fname)

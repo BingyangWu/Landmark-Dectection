@@ -5,8 +5,13 @@ import numpy as np
 
 
 def gaussian(window_size, sigma):
-    gauss = torch.Tensor([exp(-(x - window_size//2)**2/float(2*sigma**2)) for x in range(window_size)])
-    return gauss/gauss.sum()
+    gauss = torch.Tensor(
+        [
+            exp(-((x - window_size // 2) ** 2) / float(2 * sigma ** 2))
+            for x in range(window_size)
+        ]
+    )
+    return gauss / gauss.sum()
 
 
 def create_window(window_size, channel=1):
@@ -16,7 +21,15 @@ def create_window(window_size, channel=1):
     return window
 
 
-def structsim(img1, img2, window_size=11, window=None, size_average=True, full=False, val_range=None):
+def structsim(
+    img1,
+    img2,
+    window_size=11,
+    window=None,
+    size_average=True,
+    full=False,
+    val_range=None,
+):
     # Value range can be different from 255. Other common ranges are 1 (sigmoid) and 2 (tanh).
     if val_range is None:
         if torch.max(img1) > 128:
@@ -48,11 +61,10 @@ def structsim(img1, img2, window_size=11, window=None, size_average=True, full=F
 
     sigma1_sq = F.conv2d(img1 * img1, window, padding=padd, groups=channel) - mu1_sq
     sigma2_sq = F.conv2d(img2 * img2, window, padding=padd, groups=channel) - mu2_sq
-    sigma1 = sigma1_sq.clamp(min=0)**0.5
-    sigma2 = sigma2_sq.clamp(min=0)**0.5
+    sigma1 = sigma1_sq.clamp(min=0) ** 0.5
+    sigma2 = sigma2_sq.clamp(min=0) ** 0.5
     # sigma1_test = F.conv2d((img1 - mu1)**2, window, padding=padd, groups=channel)
     # sigma1_sq_test = sigma1_test.pow(2)
-
 
     sigma12 = F.conv2d(img1 * img2, window, padding=padd, groups=channel) - mu1_mu2
 
@@ -65,7 +77,7 @@ def structsim(img1, img2, window_size=11, window=None, size_average=True, full=F
 
     l = (2 * mu1_mu2 + C1) / (mu1_sq + mu2_sq + C1)
     c = (2 * sigma1 * sigma2 + C2) / (sigma1_sq + sigma2_sq + C2)
-    s = (sigma12 + (C2/2.0)) / (sigma1 * sigma2  + (C2/2.0))
+    s = (sigma12 + (C2 / 2.0)) / (sigma1 * sigma2 + (C2 / 2.0))
 
     # cs_mean = (c * s).mean()
     # cs_mean_prod = c.mean() * s.mean()
@@ -74,7 +86,15 @@ def structsim(img1, img2, window_size=11, window=None, size_average=True, full=F
 
 
 # from datasets.ds_utils import denormalized
-def ssim(img1, img2, window_size=-1, window=None, size_average=True, full=False, val_range=None):
+def ssim(
+    img1,
+    img2,
+    window_size=-1,
+    window=None,
+    size_average=True,
+    full=False,
+    val_range=None,
+):
     # Value range can be different from 255. Other common ranges are 1 (sigmoid) and 2 (tanh).
     # img1 = denormalized(img1).clamp(min=0)
     # img2 = denormalized(img2).clamp(min=0)
@@ -100,8 +120,11 @@ def ssim(img1, img2, window_size=-1, window=None, size_average=True, full=False,
             real_size = min(window_size, height, width)
             window = create_window(real_size, channel=channel).to(img1.device)
         else:
-            raise ValueError("If window not supplied, window_size must be non negative.")
+            raise ValueError(
+                "If window not supplied, window_size must be non negative."
+            )
 
+    window = window.cuda()
     mu1 = F.conv2d(img1, window, padding=padd, groups=channel)
     mu2 = F.conv2d(img2, window, padding=padd, groups=channel)
 
@@ -134,8 +157,15 @@ def ssim(img1, img2, window_size=-1, window=None, size_average=True, full=False,
     return cs
 
 
-
-def msssim(img1, img2, window_size=11, size_average=True, val_range=None, normalize=False, window=None):
+def msssim(
+    img1,
+    img2,
+    window_size=11,
+    size_average=True,
+    val_range=None,
+    normalize=False,
+    window=None,
+):
     device = img1.device
     # weights = torch.FloatTensor([0.0448, 0.2856, 0.3001, 0.2363, 0.1333]).to(device)
     weights = torch.FloatTensor([0.0448, 0.2856, 0.3001]).to(device)
@@ -143,7 +173,15 @@ def msssim(img1, img2, window_size=11, size_average=True, val_range=None, normal
     # mssim = []
     mcs = []
     for _ in range(levels):
-        cs = ssim(img1, img2, window_size=window_size, size_average=size_average, full=False, val_range=val_range, window=window)
+        cs = ssim(
+            img1,
+            img2,
+            window_size=window_size,
+            size_average=size_average,
+            full=False,
+            val_range=val_range,
+            window=window,
+        )
         # mssim.append(sim)
         mcs.append(cs)
 
@@ -185,19 +223,40 @@ class SSIM(torch.nn.Module):
         if channel == self.channel and self.window.dtype == img1.dtype:
             window = self.window
         else:
-            window = create_window(self.window_size, channel).to(img1.device).type(img1.dtype)
+            window = (
+                create_window(self.window_size, channel)
+                .to(img1.device)
+                .type(img1.dtype)
+            )
             self.window = window
             self.channel = channel
 
-        cs, self.cs_map =  ssim(img1, img2, -1, window, size_average=self.size_average, full=True)
+        cs, self.cs_map = ssim(
+            img1, img2, -1, window, size_average=self.size_average, full=True
+        )
         return cs
 
 
-def msssim_simple(img1, img2, window_size=11, size_average=True, val_range=None, normalize=False, window=None):
-    k = (2,2)
+def msssim_simple(
+    img1,
+    img2,
+    window_size=11,
+    size_average=True,
+    val_range=None,
+    normalize=False,
+    window=None,
+):
+    k = (2, 2)
     img1 = F.avg_pool2d(img1, k)
     img2 = F.avg_pool2d(img2, k)
-    cs = ssim(img1, img2, window_size=window_size, size_average=size_average, val_range=val_range, window=window)
+    cs = ssim(
+        img1,
+        img2,
+        window_size=window_size,
+        size_average=size_average,
+        val_range=val_range,
+        window=window,
+    )
     return cs
 
 
@@ -212,12 +271,26 @@ class MSSSIM(torch.nn.Module):
     def forward(self, img1, img2):
         (_, channel, _, _) = img1.size()
 
-        if self.window is not None and channel == self.channel and self.window.dtype == img1.dtype:
+        if (
+            self.window is not None
+            and channel == self.channel
+            and self.window.dtype == img1.dtype
+        ):
             window = self.window
         else:
             print("MSSIM: Creating window...")
-            window = create_window(self.window_size, channel).to(img1.device).type(img1.dtype)
+            window = (
+                create_window(self.window_size, channel)
+                .to(img1.device)
+                .type(img1.dtype)
+            )
             self.window = window
             self.channel = channel
         # return msssim(img1, img2, window_size=self.window_size, size_average=self.size_average, window=window)
-        return msssim_simple(img1, img2, window_size=self.window_size, size_average=self.size_average, window=window)
+        return msssim_simple(
+            img1,
+            img2,
+            window_size=self.window_size,
+            size_average=self.size_average,
+            window=window,
+        )

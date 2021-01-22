@@ -57,9 +57,12 @@ if __name__ == "__main__":
         img = ToTensor()(img)
         img = cfg.RHPE_NORMALIZER(img)
         img = torch.unsqueeze(img, 0)
+        print(img, img.shape)
         
         X_recon, lms_in_crop, X_lm_hm = net.detect_landmarks(img)
         outputs = add_landmarks_to_images(img, lms_in_crop, skeleton=HandDataset.SKELETON, denorm=True, draw_wireframe=True, color=(0,255,255))
         X_recon = X_recon[0, :, :, :]
         X_recon = to_disp_image(X_recon, True)
         cv2.imwrite("outputs.jpg", outputs[0])
+        cv2.imwrite("reconstruct.jpg", X_recon)
+        

@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 import config as cfg
-import networks.inverse_resnet
+import networks.invresnet
 from csl_common import vis
 
 from csl_common.utils.nn import to_numpy, count_parameters
@@ -13,6 +13,8 @@ import landmarks.lmconfig as lmcfg
 import landmarks.lmutils
 from networks import aae
 from csl_common.utils import nn
+
+use_cuda = torch.cuda.is_available()
 
 
 def load_net(model, num_landmarks=None):
@@ -41,7 +43,10 @@ class Fabrec(aae.AAE):
                                                      [cfg.DECODER_PLANES_PER_BLOCK]*4,
                                                      output_size=lmcfg.HEATMAP_SIZE,
                                                      output_channels=self.num_landmark_heatmaps,
-                                                     layer_normalization='batch').cuda()
+                                                     layer_normalization='batch')
+        
+        if use_cuda:
+            self.LMH = self.LMH.cuda()
 
         print("Trainable params LMH: {:,}".format(count_parameters(self.LMH)))
 
