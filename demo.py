@@ -4,82 +4,62 @@ import numpy as np
 
 import torch
 
-# from utils import cropping as fp
 from csl_common.utils import nn, cropping
 from csl_common import utils
+from csl_common.vis import to_disp_image, add_landmarks_to_images
 
 from landmarks import fabrec
 from torchvision import transforms as tf
 from landmarks import lmvis
-
-snapshot_dir = os.path.join('.')
-
-INPUT_SIZE = 256
-
-transforms = [utils.transforms.CenterCrop(INPUT_SIZE)]
-transforms += [utils.transforms.ToTensor()]
-transforms += [utils.transforms.Normalize([0.518, 0.418, 0.361], [1, 1, 1])]
-crop_to_tensor = tf.Compose(transforms)
+from ml_utilities.transform import Nothing, ToTensor, CenterCrop
+import config as cfg
+from datasets.handdataset import HandDataset
 
 
-def load_image(im_dir, fname):
+def load_image(im_dir, fname, channels, size):
     from skimage import io
+
     img_path = os.path.join(im_dir, fname)
     img = io.imread(img_path)
     if img is None:
         raise IOError("\tError: Could not load image {}!".format(img_path))
-    if len(img.shape) == 2 or img.shape[2] == 1:
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-    if img.shape[2] == 4:
+    if len(img.shape) >= 3 and img.shape[2] == 4:
         print(fname, "converting RGBA to RGB...")
         img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
-    assert img.shape[2] == 3, "{}, invalid format: {}".format(img_path, img.shape)
+    if channels == 3 and (len(img.shape) == 2 or img.shape[2] == 1):
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+    if channels == 1 and len(img.shape) == 3 and img.shape[2] == 3:
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    img = cv2.resize(img, size, interpolation=cv2.INTER_CUBIC)
+    if len(img.shape) == 2:
+        img = img[:, :, np.newaxis]
+    assert len(img.shape)==3, "invalid syntax: {}".format(fname)
+    img = img.transpose(2,0,1)
+    img = img.astype(np.float32)
+    assert img.shape[0] in (1, 3)
     return img
 
 
-def detect_in_crop(net, crop):
-    with torch.no_grad():
-        X_recon, lms_in_crop, X_lm_hm = net.detect_landmarks(crop)
-    lms_in_crop = utils.nn.to_numpy(lms_in_crop.reshape(1, -1, 2))
-    return X_recon, lms_in_crop, X_lm_hm
 
+if __name__ == "__main__":
 
-def test_crop(net, input_image, gt_landmarks, bb_for_crop=None, lms_for_crop=None, align=False, scale=1.0):
-    assert bb_for_crop is not None or lms_for_crop is not None
-
-    cropper = cropping.FaceCrop(input_image, bbox=bb_for_crop, landmarks=lms_for_crop,
-                                align_face_orientation=align, scale=scale,
-                                output_size=(INPUT_SIZE, INPUT_SIZE))
-    crop = cropper.apply_to_image()
-    landmarks = cropper.apply_to_landmarks(gt_landmarks)[0]
-
-    item = {'image': crop, 'landmarks': landmarks, 'pose': None}
-    item = crop_to_tensor(item)
-
-    images = nn.atleast4d(item['image']).cuda()
-    X_recon, lms, X_lm_hm = detect_in_crop(net, images)
-
-    # lmvis.visualize_batch(images, landmarks, X_recon, X_lm_hm, lms, wait=0, clean=True)
-    lmvis.visualize_batch_CVPR(images, landmarks, X_recon, X_lm_hm, lms, wait=0,
-                               horizontal=True, show_recon=True, radius=2, draw_wireframes=True)
-
-
-if __name__ == '__main__':
-
-    model = './data/models/snapshots/demo'
-    net = fabrec.load_net(model, num_landmarks=98)
+    model = "./demo"
+    net = fabrec.load_net(model, num_landmarks=17)
     net.eval()
 
-    im_dir = './images'
-    img0 = 'ada.jpg'
+    im_dir = "./images"
+    img0 = "3.png"
 
     with torch.no_grad():
 
-        img = load_image(im_dir, img0)
-
-        scalef = 0.65
-        bb0 = [0,0] + list(img.shape[:2][::-1])
-        bb = utils.geometry.scaleBB(bb0, scalef, scalef, typeBB=2)
-        test_crop(net, img, gt_landmarks=None, bb_for_crop=bb)
-
-
+        img = load_image(im_dir, img0, channels=1, size=(256,256))
+        img /= 256
+        img = ToTensor()(img)
+        img = cfg.RHPE_NORMALIZER(img)
+        img = torch.unsqueeze(img, 0)
+        
+        X_recon, lms_in_crop, X_lm_hm = net.detect_landmarks(img)
+        outputs = add_landmarks_to_images(img, lms_in_crop, skeleton=HandDataset.SKELETON, denorm=True, draw_wireframe=True, color=(0,255,255))
+        X_recon = X_recon[0, :, :, :]
+        X_recon = to_disp_image(X_recon, True)
+        cv2.imwrite("outputs.jpg", outputs[0])

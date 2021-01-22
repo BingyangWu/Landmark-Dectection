@@ -9,7 +9,7 @@ class ConcatDataset(td.Dataset):
 
         inds = []
         for id, ds in enumerate(self.datasets):
-            inds.append(np.array([[id]*len(ds), range(len(ds))]))
+            inds.append(np.array([[id] * len(ds), range(len(ds))]))
 
         self.joint_idx = np.hstack(inds).transpose()
         if shuffle:
@@ -26,7 +26,7 @@ class ConcatDataset(td.Dataset):
         return self.datasets[ds_idx][sample_idx]
 
     def __repr__(self):
-        return '\n'.join([ds.__repr__() for ds in self.datasets])
+        return "\n".join([ds.__repr__() for ds in self.datasets])
 
     def print_stats(self):
         for ds in self.datasets:
@@ -40,7 +40,6 @@ class ConcatDataset(td.Dataset):
 
 
 class ConcatFaceDataset(ConcatDataset):
-
     @property
     def heights(self):
         sizes = []
@@ -54,5 +53,3 @@ class ConcatFaceDataset(ConcatDataset):
         for ds in self.datasets:
             sizes.append(ds.widths)
         return np.concatenate(sizes)
-
-

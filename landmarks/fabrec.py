@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 import config as cfg
-import networks.invresnet
+import networks.inverse_resnet
 from csl_common import vis
 
 from csl_common.utils.nn import to_numpy, count_parameters

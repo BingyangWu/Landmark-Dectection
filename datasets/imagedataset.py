@@ -4,27 +4,51 @@ import math
 import numbers
 
 import numpy as np
-from csl_common.utils import transforms as csl_tf, geometry
+from csl_common.utils import geometry
 from csl_common.utils import image_loader
 from csl_common.utils.image_loader import CachedCropLoader
 from torchvision import transforms as tf
 import torchvision.datasets as tdv
 import pandas as pd
 
+from ml_utilities.transform import Nothing, ToTensor, CenterCrop
+import config as cfg
 
 
 class ImageDataset(tdv.VisionDataset):
-
-    def __init__(self, root, fullsize_img_dir, image_size, output_size=None, cache_root=None, train=True,
-                 transform=None, target_transform=None, crop_type='tight', color=True, start=None, max_samples=None,
-                 use_cache=True, test_split='fullset', crop_source='bb_ground_truth', loader=None,
-                 roi_background='black', crop_dir='crops', roi_margin=None, median_blur_crop=False,
-                 **kwargs):
+    def __init__(
+        self,
+        root,
+        fullsize_img_dir,
+        image_size=256,
+        output_size=None,
+        cache_root=None,
+        train=True,
+        transform=None,
+        target_transform=None,
+        crop_type="tight",
+        color=True,
+        start=None,
+        max_samples=None,
+        use_cache=True,
+        test_split="fullset",
+        crop_source="bb_ground_truth",
+        loader=None,
+        roi_background="black",
+        crop_dir="crops",
+        roi_margin=None,
+        median_blur_crop=False,
+        normalizer=cfg.RHPE_NORMALIZER,
+        **kwargs,
+    ):
 
         print("Setting up dataset {}...".format(self.__class__.__name__))
+        print("Normalizer:", normalizer)
 
         if not isinstance(image_size, numbers.Number):
-            raise FileNotFoundError(f"Image size must be scalar number (image_size={image_size}).")
+            raise FileNotFoundError(
+                f"Image size must be scalar number (image_size={image_size})."
+            )
 
         if not os.path.exists(root):
             raise FileNotFoundError(f"Invalid dataset root path: '{root}'")
@@ -55,7 +79,7 @@ class ImageDataset(tdv.VisionDataset):
 
         self.crop_dir = crop_dir
         self.test_split = test_split
-        self.split = 'train' if train else self.test_split
+        self.split = "train" if train else self.test_split
         self.train = train
         self.use_cache = use_cache
         self.crop_source = crop_source
@@ -68,25 +92,26 @@ class ImageDataset(tdv.VisionDataset):
         self._init()
         self._select_index_range()
 
-        transforms = [csl_tf.CenterCrop(self.output_size)]
-        transforms += [csl_tf.ToTensor()]
-        transforms += [csl_tf.Normalize()]
+        transforms = [CenterCrop(self.output_size)]
+        transforms += [ToTensor()]
+        transforms += [normalizer]
         self.crop_to_tensor = tf.Compose(transforms)
 
         if loader is not None:
             self.loader = loader
         else:
-            self.loader = CachedCropLoader(fullsize_img_dir,
-                                           self.cropped_img_dir,
-                                           img_size=self.image_size,
-                                           margin=self.margin,
-                                           use_cache=self.use_cache,
-                                           crop_type=crop_type,
-                                           border_mode=roi_background,
-                                           median_blur_crop=median_blur_crop)
+            self.loader = CachedCropLoader(
+                fullsize_img_dir,
+                self.cropped_img_dir,
+                img_size=self.image_size,
+                margin=self.margin,
+                use_cache=self.use_cache,
+                crop_type=crop_type,
+                border_mode=roi_background,
+                median_blur_crop=median_blur_crop,
+            )
 
         super().__init__(root, transform=transform, target_transform=target_transform)
-
 
     @property
     def cropped_img_dir(self):
@@ -110,6 +135,7 @@ class ImageDataset(tdv.VisionDataset):
 
     def filter_labels(self, label_dict):
         import collections
+
         print("Applying filter to labels: {}".format(label_dict))
         for k, v in label_dict.items():
             if isinstance(v, collections.Sequence):
@@ -120,7 +146,7 @@ class ImageDataset(tdv.VisionDataset):
         print("  Number of images: {}".format(len(self.annotations)))
 
     def _select_index_range(self):
-        st,nd = 0, None
+        st, nd = 0, None
         if self.start is not None:
             st = self.start
         if self.max_samples is not None:
@@ -132,34 +158,37 @@ class ImageDataset(tdv.VisionDataset):
         return NotImplemented
 
     def _get_image_roi_from_bbox(self, bbox):
-        return image_loader.get_roi_from_bbox(bbox, crop_size=self.image_size, margin=self.margin)
+        return image_loader.get_roi_from_bbox(
+            bbox, crop_size=self.image_size, margin=self.margin
+        )
 
     def get_sample(self, filename, bb=None, landmarks_for_crop=None, id=None):
         image_roi = self._get_image_roi_from_bbox(bb)
         try:
-            image  = self.loader.load_crop(filename, bb=image_roi, id=id)
+            image = self.loader.load_crop(filename, bb=image_roi, id=id)
         except:
-            print('Could not load image {}'.format(filename))
+            print("Could not load image {}".format(filename))
             raise
 
         if self.transform is not None:
             image = self.transform(image)
         target = self.target_transform(image.copy()) if self.target_transform else None
 
-        if self.crop_type != 'fullsize':
+        if self.crop_type != "fullsize":
             image = self.crop_to_tensor(image)
             if target is not None:
                 target = self.crop_to_tensor(target)
 
-        sample = ({ 'image': image,
-                    'fnames': filename,
-                    'bb': bb if bb is not None else [0,0,0,0]})
+        sample = {
+            "image": image,
+            "fnames": filename,
+            "bb": bb if bb is not None else [0, 0, 0, 0],
+        }
 
         if target is not None:
-            sample['target'] = target
+            sample["target"] = target
 
         return sample
-
 
 
 class ImageFolderDataset(ImageDataset):
@@ -183,7 +212,9 @@ class ImageFolderDataset(ImageDataset):
             # Faster and available in Python 3.5 and above
             classes = [d.name for d in os.scandir(dir) if d.is_dir()]
         else:
-            classes = [d for d in os.listdir(dir) if os.path.isdir(os.path.join(dir, d))]
+            classes = [
+                d for d in os.listdir(dir) if os.path.isdir(os.path.join(dir, d))
+            ]
         classes.sort()
         class_to_idx = {classes[i]: i for i in range(len(classes))}
         return classes, class_to_idx
@@ -193,11 +224,14 @@ class ImageFolderDataset(ImageDataset):
             return os.path.relpath(fullpath, root)
 
         from torchvision.datasets import folder
+
         classes, class_to_idx = self._find_classes(self.root)
-        samples = folder.make_dataset(self.root, class_to_idx, extensions=folder.IMG_EXTENSIONS)
+        samples = folder.make_dataset(
+            self.root, class_to_idx, extensions=folder.IMG_EXTENSIONS
+        )
         self.classes = classes
         self.class_to_ids = class_to_idx
         fnames = [strip_root(s[0], self.root) for s in samples]
         labels = [s[1] for s in samples]
-        ann = pd.DataFrame({'fname': fnames, 'label': labels})
+        ann = pd.DataFrame({"fname": fnames, "label": labels})
         return ann
