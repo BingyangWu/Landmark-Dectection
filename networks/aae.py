@@ -7,7 +7,6 @@ import torch.nn as nn
 
 import config as cfg
 import networks.invresnet
-import face_vis
 from networks.archs import D_net_gauss, Discriminator
 from networks import resnet_ae, archs
 
