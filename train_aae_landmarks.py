@@ -11,7 +11,6 @@ import torch.optim as optim
 import torch.nn.functional as F
 
 import config as cfg
-from utils import ds_utils as ds_utils
 from datasets import wflw, w300, aflw
 from constants import TRAIN, VAL
 from utils import log
@@ -329,7 +328,7 @@ def run():
 
         name = dsnames[0]
         # for training landmarks, there is only one dataset
-        transform = ds_utils.build_transform(deterministic=not train, daug=args.daug)
+        transform = nn.build_transform(deterministic=not train, daug=args.daug)
         # for data augument
 
         root, cache_root = cfg.get_dataset_paths(name)

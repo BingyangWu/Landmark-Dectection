@@ -135,3 +135,82 @@ def denormalized(tensor):
     else:
         t = tensor.clone()
     return denormalize(t)
+
+
+import utils.transforms as csl_tf
+
+def build_transform(deterministic, color=True, daug=0):
+    transforms = []
+    if not deterministic:
+        transforms = [csl_tf.RandomHorizontalFlip(0.5)]
+        if daug == 1:
+            transforms += [
+                csl_tf.RandomAffine(
+                    3,
+                    translate=[0.025, 0.025],
+                    scale=[0.975, 1.025],
+                    shear=0,
+                    keep_aspect=False,
+                )
+            ]
+        elif daug == 2:
+            transforms += [
+                csl_tf.RandomAffine(
+                    3,
+                    translate=[0.035, 0.035],
+                    scale=[0.970, 1.030],
+                    shear=2,
+                    keep_aspect=False,
+                )
+            ]
+        elif daug == 3:
+            transforms += [
+                csl_tf.RandomAffine(
+                    20,
+                    translate=[0.035, 0.035],
+                    scale=[0.970, 1.030],
+                    shear=0,
+                    keep_aspect=False,
+                )
+            ]
+        elif daug == 4:
+            transforms += [
+                csl_tf.RandomAffine(
+                    45,
+                    translate=[0.035, 0.035],
+                    scale=[0.940, 1.030],
+                    shear=5,
+                    keep_aspect=False,
+                )
+            ]
+        elif daug == 5:
+            transforms += [
+                csl_tf.RandomAffine(
+                    60,
+                    translate=[0.035, 0.035],
+                    scale=[0.940, 1.030],
+                    shear=5,
+                    keep_aspect=False,
+                )
+            ]
+        elif daug == 6:  # CVPR landmark training
+            transforms += [
+                csl_tf.RandomAffine(
+                    30,
+                    translate=[0.04, 0.04],
+                    scale=[0.940, 1.050],
+                    shear=5,
+                    keep_aspect=False,
+                )
+            ]
+        elif daug == 7:
+            transforms += [
+                csl_tf.RandomAffine(
+                    0,
+                    translate=[0.04, 0.04],
+                    scale=[0.940, 1.050],
+                    shear=5,
+                    keep_aspect=False,
+                )
+            ]
+    return tf.Compose(transforms)

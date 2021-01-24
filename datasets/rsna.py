@@ -4,7 +4,7 @@ import numpy as np
 import torch.utils.data as td
 import pandas as pd
 
-from utils import log, ds_utils, geometry
+from utils import log, geometry, nn
 from utils import vis
 from datasets import handdataset
 import config as cfg
@@ -163,5 +163,5 @@ if __name__ == "__main__":
         t = time.perf_counter()
         batch = Batch(data, gpu=False)
         print("t Batch:", time.perf_counter() - t)
-        images = ds_utils.denormalized(batch.images)
+        images = nn.denormalized(batch.images)
         vis.vis_square(images, fx=f, fy=f, normalize=False, nCols=10, wait=0)

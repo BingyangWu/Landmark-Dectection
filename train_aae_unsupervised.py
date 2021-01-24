@@ -9,7 +9,6 @@ import datetime
 
 from utils import log
 from utils.nn import Batch
-from utils import ds_utils
 from datasets import multi, affectnet, vggface2, wflw, w300
 from constants import TRAIN, VAL
 from networks import aae
@@ -363,7 +362,7 @@ def run(args):
         datasets_for_phase = []
         for name in dsnames:
             root, cache_root = cfg.get_dataset_paths(name)
-            transform = ds_utils.build_transform(deterministic=not train, daug=args.daug)
+            transform = nn.build_transform(deterministic=not train, daug=args.daug)
             dataset_cls = cfg.get_dataset_class(name)
             ds = dataset_cls(root=root,
                              cache_root=cache_root,
