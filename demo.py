@@ -10,7 +10,7 @@ from utils.vis import to_disp_image, add_landmarks_to_images
 from landmarks import fabrec
 from torchvision import transforms as tf
 from landmarks import lmvis
-from ml_utilities.transform import Nothing, ToTensor, CenterCrop
+from utils.transforms import Nothing, ToTensor, CenterCrop
 import config as cfg
 from datasets.handdataset import HandDataset
 

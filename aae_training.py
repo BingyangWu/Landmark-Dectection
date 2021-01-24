@@ -13,7 +13,7 @@ import torch.utils.data as td
 import torch.nn.modules.distance
 import torch.optim as optim
 
-from utils import vis, nn, io_utils
+from utils import vis, nn, io
 from utils import log as log
 from utils.nn import to_numpy, Batch, set_requires_grad
 from metrics import ssim as pytorch_msssim

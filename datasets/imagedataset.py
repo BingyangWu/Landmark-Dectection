@@ -9,7 +9,7 @@ from torchvision import transforms as tf
 import torchvision.datasets as tdv
 import pandas as pd
 
-from ml_utilities.transform import Nothing, ToTensor, CenterCrop
+from utils.transforms import Nothing, ToTensor, CenterCrop
 import config as cfg
 
 def get_roi_from_bbox(bbox, crop_size, margin):
