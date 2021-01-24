@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import numbers
 
-from csl_common.utils import geometry
+from utils import geometry
 from skimage import exposure
 
 

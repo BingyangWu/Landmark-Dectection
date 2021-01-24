@@ -11,7 +11,7 @@ import face_vis
 from networks.archs import D_net_gauss, Discriminator
 from networks import resnet_ae, archs
 
-from csl_common.utils.nn import to_numpy, count_parameters, read_model, read_meta
+from utils.nn import to_numpy, count_parameters, read_model, read_meta
 
 cuda = torch.cuda.is_available()
 

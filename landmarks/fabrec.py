@@ -5,14 +5,12 @@ import torch
 
 import config as cfg
 import networks.invresnet
-from csl_common import vis
-
-from csl_common.utils.nn import to_numpy, count_parameters
-from csl_common import utils
+from utils import vis, nn
+from utils.nn import to_numpy, count_parameters
 import landmarks.lmconfig as lmcfg
 import landmarks.lmutils
 from networks import aae
-from csl_common.utils import nn
+
 
 use_cuda = torch.cuda.is_available()
 
@@ -71,7 +69,7 @@ class Fabrec(aae.AAE):
         elif hms.shape[1] == 3:
             hms = to_numpy(hms)
             def get_score_plane(h, lm_id, cn):
-                v = utils.nn.lmcolors[lm_id, cn]
+                v = nn.lmcolors[lm_id, cn]
                 hcn = h[cn]
                 hcn[hcn < v-2] = 0; hcn[hcn > v+5] = 0
                 return hcn

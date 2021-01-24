@@ -7,9 +7,9 @@ import pandas as pd
 import numpy as np
 import datetime
 
-from csl_common.utils import log
-from csl_common.utils.nn import Batch
-import csl_common.utils.ds_utils as ds_utils
+from utils import log
+from utils.nn import Batch
+from utils import ds_utils
 from datasets import multi, affectnet, vggface2, wflw, w300
 from constants import TRAIN, VAL
 from networks import aae
@@ -341,7 +341,7 @@ class AAEUnsupervisedTraining(AAETraining):
 def run(args):
 
     if args.seed is not None:
-        from csl_common.utils.common import init_random
+        from utils.common import init_random
         init_random(args.seed)
 
     # log.info(json.dumps(vars(args), indent=4))

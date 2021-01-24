@@ -4,8 +4,8 @@ from skimage import io
 
 from datasets.imagedataset import ImageDataset
 from landmarks import lmutils
-from csl_common.vis import color_map, to_disp_image
-from csl_common.utils import transforms as csl_tf
+from utils.vis import color_map, to_disp_image
+from utils import transforms as csl_tf
 from landmarks.lmvis import show_landmark_heatmaps
 from landmarks import lmconfig as lmcfg
 from torchvision import transforms as tf

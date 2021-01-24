@@ -4,9 +4,9 @@ import torch
 from matplotlib import pyplot as plt
 from skimage.metrics import structural_similarity as compare_ssim
 
-from csl_common.utils import nn as nn
-from csl_common.utils.nn import to_numpy
-from csl_common import vis
+from utils import nn as nn
+from utils.nn import to_numpy
+from utils import vis
 from landmarks.lmutils import calc_landmark_nme, calc_landmark_ssim_score, to_single_channel_heatmap, \
     calc_landmark_nme_per_img, smooth_heatmaps
 

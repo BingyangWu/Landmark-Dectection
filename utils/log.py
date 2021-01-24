@@ -1,4 +1,4 @@
-from csl_common.utils.logger import *
+from utils.logger import *
 
 __vislogger = Logger(__name__)
 

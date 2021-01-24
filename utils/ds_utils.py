@@ -5,8 +5,8 @@ import pandas as pd
 
 from torchvision import transforms as tf
 
-import csl_common.utils.transforms as csl_tf
-from csl_common.utils.io_utils import makedirs
+import utils.transforms as csl_tf
+from utils.io_utils import makedirs
 
 # To avoid exceptions when loading truncated image files
 from PIL import ImageFile

@@ -11,11 +11,11 @@ import torch.optim as optim
 import torch.nn.functional as F
 
 import config as cfg
-import csl_common.utils.ds_utils as ds_utils
+from utils import ds_utils as ds_utils
 from datasets import wflw, w300, aflw
 from constants import TRAIN, VAL
-from csl_common.utils import log
-from csl_common.utils.nn import to_numpy, Batch
+from utils import log
+from utils.nn import to_numpy, Batch
 from train_aae_unsupervised import AAETraining
 from landmarks import lmutils, lmvis, fabrec
 import landmarks.lmconfig as lmcfg
@@ -314,7 +314,7 @@ class AAELandmarkTraining(AAETraining):
 
 def run():
 
-    from csl_common.utils.common import init_random
+    from utils.common import init_random
 
     if args.seed is not None:
         init_random(args.seed)

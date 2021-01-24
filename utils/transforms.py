@@ -25,18 +25,18 @@ class CenterCrop(object):
 
     def __call__(self, sample):
         if isinstance(sample, dict):
-            img, landmarks = sample["image"], sample["landmarks"]
+            img, landmarks, pose = sample['image'], sample['landmarks'], sample['pose']
             if landmarks is not None:
-                landmarks[..., 0] -= int((img.shape[0] - self.size[0]) / 2)
-                landmarks[..., 1] -= int((img.shape[1] - self.size[1]) / 2)
+                landmarks[...,0] -= int((img.shape[0] - self.size[0]) / 2)
+                landmarks[...,1] -= int((img.shape[1] - self.size[1]) / 2)
                 landmarks[landmarks < 0] = 0
-            sample.update({"image": self.__crop_image(img), "landmarks": landmarks})
-            return sample
+            return {'image': self.__crop_image(img), 'landmarks': landmarks, 'pose': pose}
         else:
             return self.__crop_image(sample)
 
+
     def __repr__(self):
-        return self.__class__.__name__ + "(size={})".format(self.size)
+        return self.__class__.__name__ + '(size={})'.format(self.size)
 
 
 class RandomRotation(object):
@@ -62,20 +62,21 @@ class RandomRotation(object):
         return angle
 
     def __call__(self, sample):
-        image, landmarks = sample["image"], sample["landmarks"]
+        image, landmarks, pose = sample['image'], sample['landmarks'], sample['pose']
         angle = self.get_params(self.degrees)
         h, w = image.shape[:2]
-        center = (w // 2, h // 2)
+        center = (w//2, h//2)
         M = calc_rotation_matrix(center, angle)
         img_rotated = rotate_image(image, M)
         if landmarks is not None:
             landmarks = rotate_landmarks(landmarks, M).astype(np.float32)
-        sample.update({"image": img_rotated, "landmarks": landmarks})
-        return sample
+            pose_rotated = pose
+            pose_rotated[2] -= np.deg2rad(angle).astype(np.float32)
+        return {'image': img_rotated, 'landmarks': landmarks, 'pose': pose}
 
     def __repr__(self):
-        format_string = self.__class__.__name__ + "(degrees={0}".format(self.degrees)
-        format_string += ")"
+        format_string = self.__class__.__name__ + '(degrees={0}'.format(self.degrees)
+        format_string += ')'
         return format_string
 
 
@@ -93,7 +94,7 @@ class Rescale(object):
         self.output_size = output_size
 
     def __call__(self, sample):
-        image, landmarks = sample["image"], sample["landmarks"]
+        image, landmarks, pose = sample['image'], sample['landmarks'], sample['pose']
 
         h, w = image.shape[:2]
 
@@ -115,8 +116,7 @@ class Rescale(object):
             landmarks = landmarks * [new_w / w, new_h / h]
             landmarks = landmarks.astype(np.float32)
 
-        sample.update({"image": img, "landmarks": landmarks})
-        return sample
+        return {'image': img, 'landmarks': landmarks, 'pose': pose}
 
 
 class RandomCrop(object):
@@ -136,7 +136,7 @@ class RandomCrop(object):
             self.output_size = output_size
 
     def __call__(self, sample):
-        image, landmarks, pose = sample["image"], sample["landmarks"], sample["pose"]
+        image, landmarks, pose = sample['image'], sample['landmarks'], sample['pose']
 
         h, w = image.shape[:2]
         new_h, new_w = self.output_size
@@ -144,13 +144,14 @@ class RandomCrop(object):
         top = np.random.randint(0, h - new_h)
         left = np.random.randint(0, w - new_w)
 
-        image = image[top : top + new_h, left : left + new_w]
+        image = image[top: top + new_h,
+                      left: left + new_w]
 
         if landmarks is not None:
             landmarks = landmarks - [left, top]
             landmarks = landmarks.astype(np.float32)
 
-        return {"image": image, "landmarks": landmarks, "pose": pose}
+        return {'image': image, 'landmarks': landmarks, 'pose': pose}
 
 
 class RandomResizedCrop(object):
@@ -174,7 +175,7 @@ class RandomResizedCrop(object):
         self.keep_aspect = keep_aspect
 
     def __call__(self, sample):
-        image, landmarks, pose = sample["image"], sample["landmarks"], sample["pose"]
+        image, landmarks, pose = sample['image'], sample['landmarks'], sample['pose']
 
         h, w = image.shape[:2]
         s_x = random.uniform(*self.scale)
@@ -187,18 +188,15 @@ class RandomResizedCrop(object):
         top = np.random.randint(0, h - new_h)
         left = np.random.randint(0, w - new_w)
 
-        image = image[top : top + new_h, left : left + new_w]
+        image = image[top: top + new_h,
+                left: left + new_w]
 
         landmarks = landmarks - [left, top]
 
         image = cv2.resize(image, dsize=self.output_size)
         landmarks /= [s_x, s_y]
 
-        return {
-            "image": image,
-            "landmarks": landmarks.astype(np.float32),
-            "pose": pose.astype(np.float32),
-        }
+        return {'image': image, 'landmarks': landmarks.astype(np.float32), 'pose': pose.astype(np.float32)}
 
 
 class RandomHorizontalFlip(object):
@@ -207,153 +205,167 @@ class RandomHorizontalFlip(object):
     Args:
         p (float): probability of the image being flipped. Default value is 0.5
     """
-
     lm_left_to_right_98 = {
         # outline
-        0: 32,
-        1: 31,
-        2: 30,
-        3: 29,
-        4: 28,
-        5: 27,
-        6: 26,
-        7: 25,
-        8: 24,
-        9: 23,
-        10: 22,
-        11: 21,
-        12: 20,
-        13: 19,
-        14: 18,
-        15: 17,
-        16: 16,
-        # eyebrows
-        33: 46,
-        34: 45,
-        35: 44,
-        36: 43,
-        37: 42,
-        38: 50,
-        39: 49,
-        40: 48,
-        41: 47,
-        # nose
-        51: 51,
-        52: 52,
-        53: 53,
-        54: 54,
-        55: 59,
-        56: 58,
-        57: 57,
-        # eyes
-        60: 72,
-        61: 71,
-        62: 70,
-        63: 69,
-        64: 68,
-        65: 75,
-        66: 74,
-        67: 73,
-        96: 97,
-        # mouth outer
-        76: 82,
-        77: 81,
-        78: 80,
-        79: 79,
-        87: 83,
-        86: 84,
-        85: 85,
-        # mouth inner
-        88: 92,
-        89: 91,
-        90: 90,
-        95: 93,
-        94: 94,
+        0:32,
+        1:31,
+        2:30,
+        3:29,
+        4:28,
+        5:27,
+        6:26,
+        7:25,
+        8:24,
+
+        9:23,
+        10:22,
+        11:21,
+        12:20,
+        13:19,
+        14:18,
+        15:17,
+        16:16,
+
+        #eyebrows
+        33:46,
+        34:45,
+        35:44,
+        36:43,
+        37:42,
+        38:50,
+        39:49,
+        40:48,
+        41:47,
+
+        #nose
+        51:51,
+        52:52,
+        53:53,
+        54:54,
+
+        55:59,
+        56:58,
+        57:57,
+
+        #eyes
+        60:72,
+        61:71,
+        62:70,
+        63:69,
+        64:68,
+        65:75,
+        66:74,
+        67:73,
+        96:97,
+
+        #mouth outer
+        76:82,
+        77:81,
+        78:80,
+        79:79,
+        87:83,
+        86:84,
+        85:85,
+
+        #mouth inner
+        88:92,
+        89:91,
+        90:90,
+        95:93,
+        94:94,
     }
 
     lm_left_to_right_68 = {
         # outline
-        0: 16,
-        1: 15,
-        2: 14,
-        3: 13,
-        4: 12,
-        5: 11,
-        6: 10,
-        7: 9,
-        8: 8,
-        # eyebrows
-        17: 26,
-        18: 25,
-        19: 24,
-        20: 23,
-        21: 22,
-        # nose
-        27: 27,
-        28: 28,
-        29: 29,
-        30: 30,
-        31: 35,
-        32: 34,
-        33: 33,
-        # eyes
-        36: 45,
-        37: 44,
-        38: 43,
-        39: 42,
-        40: 47,
-        41: 46,
-        # mouth outer
-        48: 54,
-        49: 53,
-        50: 52,
-        51: 51,
-        57: 57,
-        58: 56,
-        59: 55,
-        # mouth inner
-        60: 64,
-        61: 63,
-        62: 62,
-        66: 66,
-        67: 65,
+        0:16,
+        1:15,
+        2:14,
+        3:13,
+        4:12,
+        5:11,
+        6:10,
+        7:9,
+        8:8,
+
+        #eyebrows
+        17:26,
+        18:25,
+        19:24,
+        20:23,
+        21:22,
+
+        #nose
+        27:27,
+        28:28,
+        29:29,
+        30:30,
+
+        31:35,
+        32:34,
+        33:33,
+
+        #eyes
+        36:45,
+        37:44,
+        38:43,
+        39:42,
+        40:47,
+        41:46,
+
+        #mouth outer
+        48:54,
+        49:53,
+        50:52,
+        51:51,
+        57:57,
+        58:56,
+        59:55,
+
+        #mouth inner
+        60:64,
+        61:63,
+        62:62,
+        66:66,
+        67:65,
     }
 
     # AFLW
     lm_left_to_right_21 = {
-        0: 5,
-        1: 4,
-        2: 3,
-        6: 11,
-        7: 10,
-        8: 9,
-        12: 16,
-        13: 15,
-        14: 14,
-        17: 19,
-        18: 18,
-        20: 20,
+        0:5,
+        1:4,
+        2:3,
+        6:11,
+        7:10,
+        8:9,
+
+        12:16,
+        13:15,
+        14:14,
+        17:19,
+        18:18,
+        20:20
     }
 
     # AFLW without ears
     lm_left_to_right_19 = {
-        0: 5,
-        1: 4,
-        2: 3,
-        6: 11,
-        7: 10,
-        8: 9,
-        12: 14,
-        13: 13,
-        15: 17,
-        16: 16,
-        18: 18,
+        0:5,
+        1:4,
+        2:3,
+        6:11,
+        7:10,
+        8:9,
+
+        12:14,
+        13:13,
+        15:17,
+        16:16,
+        18:18
     }
 
     lm_left_to_right_5 = {
-        0: 1,
-        2: 2,
-        3: 4,
+        0:1,
+        2:2,
+        3:4,
     }
 
     lm_left_to_right_38 = {
@@ -361,6 +373,7 @@ class RandomHorizontalFlip(object):
         0: 5,
         1: 4,
         2: 3,
+
         # eyes
         12: 24,
         13: 23,
@@ -370,33 +383,36 @@ class RandomHorizontalFlip(object):
         17: 27,
         18: 26,
         19: 25,
+
         # nose
         6: 6,
         7: 7,
         8: 8,
         9: 11,
         10: 10,
+
         # mouth
         28: 34,
         29: 33,
         30: 32,
         31: 31,
         36: 36,
-        37: 37,
+        37: 37
     }
 
     # DeepFashion full body fashion landmarks
     lm_left_to_right_8 = {
-        0: 1,
-        2: 3,
-        4: 5,
-        6: 7,
+        0:1,
+        2:3,
+        4:5,
+        6:7,
     }
 
     def __init__(self, p=0.5):
+
         def build_landmark_flip_map(left_to_right):
             map = left_to_right
-            right_to_left = {v: k for k, v in map.items()}
+            right_to_left = {v:k for k,v in map.items()}
             map.update(right_to_left)
             return map
 
@@ -410,18 +426,15 @@ class RandomHorizontalFlip(object):
         self.lm_flip_map_8 = build_landmark_flip_map(self.lm_left_to_right_8)
         self.lm_flip_map_38 = build_landmark_flip_map(self.lm_left_to_right_38)
 
+
     def __call__(self, sample):
         if random.random() < self.p:
             if isinstance(sample, dict):
-                img, landmarks, pose = (
-                    sample["image"],
-                    sample["landmarks"],
-                    sample["pose"],
-                )
+                img, landmarks, pose = sample['image'], sample['landmarks'], sample['pose']
                 # flip image
                 flipped_img = np.fliplr(img).copy()
                 # flip landmarks
-                non_zeros = landmarks[:, 0] > 0
+                non_zeros = landmarks[:,0] > 0
                 landmarks[non_zeros, 0] *= -1
                 landmarks[non_zeros, 0] += img.shape[1]
                 landmarks_new = landmarks.copy()
@@ -440,19 +453,19 @@ class RandomHorizontalFlip(object):
                 elif len(landmarks) == 38:
                     lm_flip_map = self.lm_flip_map_38
                 else:
-                    raise ValueError("Invalid landmark format.")
+                    raise ValueError('Invalid landmark format.')
                 for i in range(len(landmarks)):
                     landmarks_new[i] = landmarks[lm_flip_map[i]]
                 # flip pose
                 if pose is not None:
                     pose[1] *= -1
-                return {"image": flipped_img, "landmarks": landmarks_new, "pose": pose}
+                return {'image': flipped_img, 'landmarks': landmarks_new, 'pose': pose}
 
             return np.fliplr(sample).copy()
         return sample
 
     def __repr__(self):
-        return self.__class__.__name__ + "(p={})".format(self.p)
+        return self.__class__.__name__ + '(p={})'.format(self.p)
 
 
 class RandomAffine(object):
@@ -480,39 +493,27 @@ class RandomAffine(object):
 
     """
 
-    def __init__(
-        self,
-        degrees=0,
-        translate=None,
-        scale=None,
-        shear=None,
-        resample=False,
-        fillcolor=0,
-        keep_aspect=True,
-    ):
+    def __init__(self, degrees=0, translate=None, scale=None, shear=None, resample=False, fillcolor=0, keep_aspect=True):
         if isinstance(degrees, numbers.Number):
             if degrees < 0:
                 raise ValueError("If degrees is a single number, it must be positive.")
             self.angle_range = (-degrees, degrees)
         else:
-            assert (
-                isinstance(degrees, (tuple, list)) and len(degrees) == 2
-            ), "degrees should be a list or tuple and it must be of length 2."
+            assert isinstance(degrees, (tuple, list)) and len(degrees) == 2, \
+                "degrees should be a list or tuple and it must be of length 2."
             self.angle_range = degrees
 
         if translate is not None:
-            assert (
-                isinstance(translate, (tuple, list)) and len(translate) == 2
-            ), "translate should be a list or tuple and it must be of length 2."
+            assert isinstance(translate, (tuple, list)) and len(translate) == 2, \
+                "translate should be a list or tuple and it must be of length 2."
             for t in translate:
                 if not (0.0 <= t <= 1.0):
                     raise ValueError("translation values should be between 0 and 1")
         self.translate = translate
 
         if scale is not None:
-            assert (
-                isinstance(scale, (tuple, list)) and len(scale) == 2
-            ), "scale should be a list or tuple and it must be of length 2."
+            assert isinstance(scale, (tuple, list)) and len(scale) == 2, \
+                "scale should be a list or tuple and it must be of length 2."
             for s in scale:
                 if s <= 0:
                     raise ValueError("scale values should be positive")
@@ -521,14 +522,11 @@ class RandomAffine(object):
         if shear is not None:
             if isinstance(shear, numbers.Number):
                 if shear < 0:
-                    raise ValueError(
-                        "If shear is a single number, it must be positive."
-                    )
+                    raise ValueError("If shear is a single number, it must be positive.")
                 self.shear_range = (-shear, shear)
             else:
-                assert (
-                    isinstance(shear, (tuple, list)) and len(shear) == 2
-                ), "shear should be a list or tuple and it must be of length 2."
+                assert isinstance(shear, (tuple, list)) and len(shear) == 2, \
+                    "shear should be a list or tuple and it must be of length 2."
                 self.shear_range = shear
         else:
             self.shear_range = shear
@@ -550,10 +548,8 @@ class RandomAffine(object):
         if self.translate is not None:
             max_dx = self.translate[0] * img_size[0]
             max_dy = self.translate[1] * img_size[1]
-            translations = (
-                -np.round(random.uniform(-max_dx, max_dx)),
-                -np.round(random.uniform(-max_dy, max_dy)),
-            )
+            translations = (-np.round(random.uniform(-max_dx, max_dx)),
+                            -np.round(random.uniform(-max_dy, max_dy)))
         else:
             translations = (0, 0)
 
@@ -580,14 +576,12 @@ class RandomAffine(object):
             shear=np.deg2rad(shear),
             scale=scales,
         )
-        t = skimage.transform.AffineTransform(translation=-np.array(img_size[::-1]) / 2)
-        return skimage.transform.AffineTransform(
-            matrix=t._inv_matrix.dot(M.params.dot(t.params))
-        )
+        t = skimage.transform.AffineTransform(translation=-np.array(img_size[::-1])/2)
+        return skimage.transform.AffineTransform(matrix=t._inv_matrix.dot(M.params.dot(t.params)))
 
     def __call__(self, sample):
         if isinstance(sample, dict):
-            img, landmarks, pose = sample["image"], sample["landmarks"], sample["pose"]
+            img, landmarks, pose = sample['image'], sample['landmarks'], sample['pose']
         else:
             img = sample
 
@@ -600,7 +594,7 @@ class RandomAffine(object):
                 landmarks_new = None
             else:
                 landmarks_new = transform_landmarks(landmarks, M).astype(np.float32)
-            return {"image": img_new, "landmarks": landmarks_new, "pose": pose}
+            return {'image': img_new, 'landmarks': landmarks_new, 'pose': pose}
         else:
             return img_new
 
@@ -608,24 +602,23 @@ class RandomAffine(object):
         if isinstance(img_size, numbers.Number):
             self.degrees = (img_size, img_size)
         else:
-            assert (
-                isinstance(img_size, (tuple, list)) and len(img_size) == 2
-            ), "img_size should be a list or tuple and it must be of length 2."
+            assert isinstance(img_size, (tuple, list)) and len(img_size) == 2, \
+                "img_size should be a list or tuple and it must be of length 2."
         return self.get_params(img_size)
 
     def __repr__(self):
-        s = f"{self.__class__.__name__}(degrees={self.angle_range}"
+        s = f'{self.__class__.__name__}(degrees={self.angle_range}'
         if self.translate is not None:
-            s += f", translate={self.translate}"
+            s += f', translate={self.translate}'
         if self.scale_range is not None:
-            s += f", scale={self.scale_range}"
+            s += f', scale={self.scale_range}'
         if self.shear_range is not None:
-            s += f", shear={self.shear_range}"
+            s += f', shear={self.shear_range}'
         if self.resample > 0:
-            s += f", resample={self.resample}"
+            s += f', resample={self.resample}'
         if self.fillcolor != 0:
-            s += f", fillcolor={self.fillcolor}"
-        s += ")"
+            s += f', fillcolor={self.fillcolor}'
+        s += ')'
         return s
 
 
@@ -644,7 +637,7 @@ class RandomLowQuality(object):
         self.qmax = qmax
 
     def _encode(self, img, q):
-        return cv2.imencode(".jpg", img, params=[int(cv2.IMWRITE_JPEG_QUALITY), q])
+        return cv2.imencode('.jpg', img, params=[int(cv2.IMWRITE_JPEG_QUALITY), q])
 
     def _recode(self, img, q):
         return cv2.imdecode(self._encode(img, q)[1], flags=cv2.IMREAD_COLOR)
@@ -662,7 +655,7 @@ class RandomLowQuality(object):
         return img
 
     def __repr__(self):
-        return self.__class__.__name__ + "(p={})".format(self.p)
+        return self.__class__.__name__ + '(p={})'.format(self.p)
 
 
 class RandomOcclusion(object):
@@ -675,55 +668,32 @@ class RandomOcclusion(object):
 
     def __add_occlusions(self, img):
 
-        cx = random.randint(self.bkg_size, self.bkg_size + self.img_size)
-        cy = random.randint(self.bkg_size, self.bkg_size + self.img_size)
+        cx = random.randint(self.bkg_size, self.bkg_size+self.img_size)
+        cy = random.randint(self.bkg_size, self.bkg_size+self.img_size)
 
-        w_half = (
-            min(
-                img.shape[1] - cx - 1,
-                random.randint(self.min_occ_size, self.max_occ_size),
-            )
-            // 2
-        )
-        h_half = (
-            min(
-                img.shape[0] - cy - 1,
-                random.randint(self.min_occ_size, self.max_occ_size),
-            )
-            // 2
-        )
+        w_half = min(img.shape[1]-cx-1, random.randint(self.min_occ_size, self.max_occ_size)) // 2
+        h_half = min(img.shape[0]-cy-1, random.randint(self.min_occ_size, self.max_occ_size)) // 2
         w_half = min(cx, w_half)
         h_half = min(cy, h_half)
 
         l = 0
-        t = random.randint(h_half + 1, self.img_size)
+        t = random.randint(h_half+1, self.img_size)
 
         r = self.bkg_size
-        b = min(img.shape[0] - 1, t + 2 * h_half)
+        b = min(img.shape[0]-1, t+2*h_half)
 
         cutout = img[t:b, l:r]
-        dst_shape = (2 * h_half, 2 * w_half)
+        dst_shape = (2*h_half, 2*w_half)
 
         if cutout.shape[:2] != dst_shape:
             try:
-                cutout = cv2.resize(
-                    cutout, dsize=dst_shape[::-1], interpolation=cv2.INTER_CUBIC
-                )
+                cutout = cv2.resize(cutout, dsize=dst_shape[::-1], interpolation=cv2.INTER_CUBIC)
             except:
-                print(
-                    "resize error",
-                    img.shape,
-                    dst_shape,
-                    cutout.shape[:2],
-                    cy,
-                    cx,
-                    h_half,
-                    w_half,
-                )
+                print('resize error', img.shape, dst_shape, cutout.shape[:2], cy, cx, h_half, w_half)
 
         try:
-            cutout = cv2.blur(cutout, ksize=(5, 5))
-            img[cy - h_half : cy + h_half, cx - w_half : cx + w_half] = cutout
+            cutout = cv2.blur(cutout, ksize=(5,5))
+            img[cy-h_half:cy+h_half, cx-w_half:cx+w_half] = cutout
         except:
             print(img.shape, dst_shape, cutout.shape[:2], cy, cx, h_half, w_half)
         # plt.imshow(img)
@@ -732,17 +702,13 @@ class RandomOcclusion(object):
 
     def __call__(self, sample):
         if isinstance(sample, dict):
-            img, landmarks, pose = sample["image"], sample["landmarks"], sample["pose"]
-            return {
-                "image": self.__add_occlusions(img),
-                "landmarks": landmarks,
-                "pose": pose,
-            }
+            img, landmarks, pose = sample['image'], sample['landmarks'], sample['pose']
+            return {'image': self.__add_occlusions(img), 'landmarks': landmarks, 'pose': pose}
         else:
             return self.__add_occlusions(sample)
 
     def __repr__(self):
-        return self.__class__.__name__ + "(size={})".format(self.size)
+        return self.__class__.__name__ + '(size={})'.format(self.size)
 
 
 def calc_rotation_matrix(center, degrees):
@@ -754,9 +720,7 @@ def rotate_image(img, M):
 
 
 def rotate_landmarks(lms, M):
-    _lms_hom = np.hstack(
-        (lms, np.ones((lms.shape[0], 1)))
-    )  # make landmarks homogeneous
+    _lms_hom = np.hstack((lms, np.ones((lms.shape[0], 1))))  # make landmarks homogeneous
     return M.dot(_lms_hom.T).T  # apply transformation
 
 
@@ -765,9 +729,7 @@ def transform_image(img, M):
 
 
 def transform_landmarks(lms, M):
-    _lms_hom = np.hstack(
-        (lms, np.ones((lms.shape[0], 1)))
-    )  # make landmarks homogeneous
+    _lms_hom = np.hstack((lms, np.ones((lms.shape[0], 1))))  # make landmarks homogeneous
     # t = skimage.transform.AffineTransform(translation=-np.array(img.shape[:2][::-1])/2)
     # m = t._inv_matrix.dot(M.params.dot(t.params))
     # return M.params.dot(_lms_hom.T).T[:,:2]
@@ -787,7 +749,7 @@ class Normalize(object):
 
     def __init__(self, mean=None, std=None):
         if mean is None:
-            mean = [0.518, 0.418, 0.361]  # VGGFace(2) means
+            mean = [0.518, 0.418, 0.361] # VGGFace(2) means
         if std is None:
             std = [1, 1, 1]
         self.mean = mean
@@ -802,15 +764,14 @@ class Normalize(object):
             Tensor: Normalized Tensor image.
         """
         if isinstance(sample, dict):
-            sample["image"] = F.normalize(sample["image"], self.mean, self.std)
+            sample['image'] = F.normalize(sample['image'], self.mean, self.std)
         else:
             sample = F.normalize(sample, self.mean, self.std)
         return sample
 
+
     def __repr__(self):
-        return self.__class__.__name__ + "(mean={0}, std={1})".format(
-            self.mean, self.std
-        )
+        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
 
 
 class ToTensor(object):
@@ -818,20 +779,15 @@ class ToTensor(object):
 
     def __call__(self, sample):
         if isinstance(sample, dict):
-            image, landmarks = (
-                sample["image"],
-                sample["landmarks"],
-            )
+            image, landmarks, pose = sample['image'], sample['landmarks'], sample['pose']
 
             # swap color axis because
             # numpy image: H x W x C
             # torch image: C X H X W
-            if len(image.shape) == 2:
-                image = np.expand_dims(image, 2)
-            if image.shape[0] <= 3:
-                image = image.transpose((1, 2, 0))
-            sample.update({"image": F.to_tensor(image), "landmarks": landmarks})
-            return sample
+            # image = image.transpose((2, 0, 1))
+            return {'image': F.to_tensor(image),
+                    'landmarks': landmarks,
+                    'pose': pose}
         else:
             return F.to_tensor(sample)
             # return torch.from_numpy(sample)

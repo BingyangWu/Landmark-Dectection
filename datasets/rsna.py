@@ -4,8 +4,8 @@ import numpy as np
 import torch.utils.data as td
 import pandas as pd
 
-from csl_common.utils import log, cropping, ds_utils, geometry
-from csl_common.vis import vis
+from utils import log, cropping, ds_utils, geometry
+from utils import vis
 from datasets import handdataset
 import config as cfg
 import json

@@ -4,9 +4,8 @@ import numpy as np
 
 import torch
 
-from csl_common.utils import nn, cropping
-from csl_common import utils
-from csl_common.vis import to_disp_image, add_landmarks_to_images
+from utils import nn, cropping
+from utils.vis import to_disp_image, add_landmarks_to_images
 
 from landmarks import fabrec
 from torchvision import transforms as tf
@@ -58,11 +57,10 @@ if __name__ == "__main__":
         img = cfg.RHPE_NORMALIZER(img)
         img = torch.unsqueeze(img, 0)
         print(img, img.shape)
-        
+
         X_recon, lms_in_crop, X_lm_hm = net.detect_landmarks(img)
         outputs = add_landmarks_to_images(img, lms_in_crop, skeleton=HandDataset.SKELETON, denorm=True, draw_wireframe=True, color=(0,255,255))
         X_recon = X_recon[0, :, :, :]
         X_recon = to_disp_image(X_recon, True)
-        cv2.imwrite("outputs.jpg", outputs[0])
-        cv2.imwrite("reconstruct.jpg", X_recon)
-        
+        cv2.imwrite("images/outputs.jpg", outputs[0])
+        cv2.imwrite("images/reconstruct.jpg", X_recon)

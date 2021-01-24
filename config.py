@@ -62,7 +62,7 @@ def get_dataset_paths(dsname):
         if not path_local:
             path_local = path
         if not os.path.exists(path_local):
-            from csl_common.utils.io_utils import makedirs
+            from utils.io_utils import makedirs
 
             try:
                 makedirs(path_local)

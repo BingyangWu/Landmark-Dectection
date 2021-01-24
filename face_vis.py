@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 from skimage.metrics import structural_similarity as compare_ssim
 
-from csl_common.utils.nn import to_numpy
-from csl_common.vis import vis
+from utils.nn import to_numpy
+from utils import vis
 from landmarks import lmconfig as lmcfg
 
 

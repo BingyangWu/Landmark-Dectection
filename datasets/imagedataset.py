@@ -4,9 +4,9 @@ import math
 import numbers
 
 import numpy as np
-from csl_common.utils import geometry
-from csl_common.utils import image_loader
-from csl_common.utils.image_loader import CachedCropLoader
+from utils import geometry
+from utils import image_loader
+from utils.image_loader import CachedCropLoader
 from torchvision import transforms as tf
 import torchvision.datasets as tdv
 import pandas as pd

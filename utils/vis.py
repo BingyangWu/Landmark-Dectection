@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 import seaborn as sns
-from csl_common.utils.nn import to_numpy
+from utils.nn import to_numpy
 from ml_utilities.transform import Nothing, Normalizer
 
 import config as cfg
