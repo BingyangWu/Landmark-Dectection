@@ -47,7 +47,7 @@ if __name__ == "__main__":
     net.eval()
 
     im_dir = "./images"
-    img0 = "3.png"
+    img0 = "5.jpg"
 
     with torch.no_grad():
 
