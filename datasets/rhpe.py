@@ -4,7 +4,7 @@ import numpy as np
 import torch.utils.data as td
 import pandas as pd
 
-from utils import log, cropping, ds_utils, geometry
+from utils import log, ds_utils, geometry
 from utils import vis
 from datasets import handdataset
 import config as cfg
@@ -136,9 +136,9 @@ if __name__ == "__main__":
     # extract_main()
     # exit()
     from utils.nn import Batch
-    import utils.common as util
+    from utils import random
 
-    util.init_random()
+    random.init_random()
 
     ds = VggFace2(
         train=True,

@@ -5,14 +5,39 @@ import numbers
 
 import numpy as np
 from utils import geometry
-from utils import image_loader
-from utils.image_loader import CachedCropLoader
 from torchvision import transforms as tf
 import torchvision.datasets as tdv
 import pandas as pd
 
 from ml_utilities.transform import Nothing, ToTensor, CenterCrop
 import config as cfg
+
+def get_roi_from_bbox(bbox, crop_size, margin):
+
+    if bbox is None:
+        return bbox
+
+    l, t, r, b = bbox
+    w = r - l
+    h = b - t
+
+    # set width of bbox same as height
+    size = w if w > h else h
+    cx = (r + l) / 2
+    cy = (t + b) / 2
+    l_new, r_new = cx - size / 2, cx + size / 2
+    t_new, b_new = cy - size / 2, cy + size / 2
+
+    if l_new > r_new:
+        l_new, r_new = r_new, l_new
+
+    bbox = np.array([l_new, t_new, r_new, b_new], dtype=np.float32)
+
+    # extend bbox so that (final resized) crops will contain border area specified by margin
+    scalef = (crop_size + margin) / crop_size
+    crop_roi = geometry.scaleBB(bbox, scalef, scalef, typeBB=2)
+    return crop_roi
+
 
 
 class ImageDataset(tdv.VisionDataset):
@@ -158,7 +183,7 @@ class ImageDataset(tdv.VisionDataset):
         return NotImplemented
 
     def _get_image_roi_from_bbox(self, bbox):
-        return image_loader.get_roi_from_bbox(
+        return get_roi_from_bbox(
             bbox, crop_size=self.image_size, margin=self.margin
         )
 

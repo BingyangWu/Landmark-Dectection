@@ -4,7 +4,7 @@ import numpy as np
 
 import torch
 
-from utils import nn, cropping
+from utils import nn
 from utils.vis import to_disp_image, add_landmarks_to_images
 
 from landmarks import fabrec

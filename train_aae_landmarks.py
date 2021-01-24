@@ -314,10 +314,10 @@ class AAELandmarkTraining(AAETraining):
 
 def run():
 
-    from utils.common import init_random
+    from utils import random
 
     if args.seed is not None:
-        init_random(args.seed)
+        random.init_random(args.seed)
     # log.info(json.dumps(vars(args), indent=4))
 
     datasets = {}

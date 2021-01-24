@@ -341,8 +341,8 @@ class AAEUnsupervisedTraining(AAETraining):
 def run(args):
 
     if args.seed is not None:
-        from utils.common import init_random
-        init_random(args.seed)
+        from utils import random
+        random.init_random(args.seed)
 
     # log.info(json.dumps(vars(args), indent=4))
 
