@@ -12,11 +12,10 @@ import torch.optim as optim
 import torch.nn.functional as F
 
 import config as cfg
-import csl_common.utils.ds_utils as ds_utils
 from datasets import rhpe, rsna
 from constants import TRAIN, VAL
-from csl_common.utils import log, io_utils
-from csl_common.utils.nn import to_numpy, Batch
+from utils import log, io, nn
+from utils.nn import to_numpy, Batch
 from train_aae_unsupervised import AAETraining
 from landmarks import lmutils, lmvis, fabrec
 import landmarks.lmconfig as lmcfg
@@ -201,7 +200,7 @@ class AAELandmarkTraining(AAETraining):
             str(self.epoch + 1),
             "eval" if eval else "train",
         )
-        io_utils.makedirs(out_dir)
+        io.makedirs(out_dir)
         lmvis.visualize_batch(
             batch.images,
             batch.landmarks,
@@ -242,7 +241,7 @@ class AAELandmarkTraining(AAETraining):
             avg_z_recon_mean=means.get("z_recon_mean", -1),
         )
         data[str(self.epoch + 1)] = losses
-        io_utils.makedirs(out_dir)
+        io.makedirs(out_dir)
         with open(os.path.join(out_dir, filename), "w") as outfile:
             json.dump(data, outfile)
 
@@ -416,7 +415,7 @@ class AAELandmarkTraining(AAETraining):
                 self.session_name,
                 str(self.epoch + 1),
             )
-            io_utils.makedirs(out_dir)
+            io.makedirs(out_dir)
 
             lmvis.visualize_batch(
                 batch.images,
@@ -441,10 +440,10 @@ class AAELandmarkTraining(AAETraining):
 
 def run():
 
-    from csl_common.utils.common import init_random
+    from utils import random
 
     if args.seed is not None:
-        init_random(args.seed)
+        random.init_random(args.seed)
     # log.info(json.dumps(vars(args), indent=4))
 
     datasets = {}
@@ -455,7 +454,7 @@ def run():
     ):
         train = phase == TRAIN
         name = dsnames[0]
-        transform = ds_utils.build_transform(deterministic=not train, daug=args.daug)
+        transform = nn.build_transform(deterministic=not train, daug=args.daug)
         root, cache_root = cfg.get_dataset_paths(name)
         dataset_cls = cfg.get_dataset_class(name)
         datasets[phase] = dataset_cls(

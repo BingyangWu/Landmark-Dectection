@@ -42,7 +42,7 @@ class RSNA(handdataset.HandDataset):
             cache_root=cache_root,
             fullsize_img_dir=fullsize_img_dir,
             crop_dir=os.path.join(self.split_folder, "crops"),
-            return_landmark_heatmaps=True,
+            # return_landmark_heatmaps=True,
             return_modified_images=return_modified_images,
             **kwargs,
         )

@@ -5,6 +5,8 @@ import numpy as np
 import torch
 
 import config as cfg
+from torchvision import transforms as tf
+
 cuda = torch.cuda.is_available()
 
 def count_parameters(m):

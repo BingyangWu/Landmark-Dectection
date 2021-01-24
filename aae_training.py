@@ -13,13 +13,13 @@ import torch.utils.data as td
 import torch.nn.modules.distance
 import torch.optim as optim
 
-from csl_common import vis
-from csl_common.utils import nn, io_utils
-from csl_common.utils.nn import to_numpy, Batch, set_requires_grad
-import csl_common.utils.log as log
-from csl_common.metrics import ssim as pytorch_msssim
+from utils import vis
+from utils import nn, io
+from utils.nn import to_numpy, Batch, set_requires_grad
+import utils.log as log
+from metrics import ssim as pytorch_msssim
 
-from ml_utilities.transform import Normalizer, Nothing
+from utils.transforms import Normalizer, Nothing
 
 from constants import TRAIN, VAL
 import config as cfg
@@ -231,7 +231,7 @@ class AAETraining(object):
                 "input_size": model.input_size,
                 "state_dict": model.state_dict(),
             }
-            io_utils.makedirs(filepath_mdl)
+            io.makedirs(filepath_mdl)
             torch.save(snapshot, filepath_mdl)
 
         def write_meta(out_dir):
@@ -253,7 +253,7 @@ class AAETraining(object):
 
         # save a copy of this snapshot as the best one so far
         if is_best:
-            io_utils.copy_files(
+            io.copy_files(
                 src_dir=model_snap_dir, dst_dir=model_data_dir, pattern="*.mdl"
             )
 
@@ -590,7 +590,7 @@ class AAETraining(object):
             )
             filename = f"reconst_{phase}-{self.session_name}_{self.epoch+1}.jpg"
             img_filepath = os.path.join(out_dir, phase, filename)
-            io_utils.makedirs(img_filepath)
+            io.makedirs(img_filepath)
             cv2.imwrite(img_filepath, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 
 

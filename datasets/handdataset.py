@@ -35,7 +35,7 @@ class HandDataset(ImageDataset):
 
     def __init__(
         self,
-        return_landmark_heatmaps=False,
+        # return_landmark_heatmaps=True,
         landmark_sigma=9,
         align_face_orientation=False,
         image_size=256,
