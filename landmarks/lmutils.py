@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
 import landmarks.lmconfig as lmcfg
-from csl_common.utils.nn import to_numpy, to_image
-from csl_common.vis import vis
+from utils.nn import to_numpy, to_image
+from utils import vis
 import matplotlib.pyplot as plt
 from skimage.metrics import structural_similarity as compare_ssim
 import torch

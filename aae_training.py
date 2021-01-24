@@ -13,11 +13,10 @@ import torch.utils.data as td
 import torch.nn.modules.distance
 import torch.optim as optim
 
-from csl_common import vis
-from csl_common.utils import nn, io_utils
-from csl_common.utils.nn import to_numpy, Batch, set_requires_grad
-import csl_common.utils.log as log
-from csl_common.metrics import ssim as pytorch_msssim
+from utils import vis, nn, io
+from utils import log as log
+from utils.nn import to_numpy, Batch, set_requires_grad
+from metrics import ssim as pytorch_msssim
 
 from constants import TRAIN, VAL
 import config as cfg

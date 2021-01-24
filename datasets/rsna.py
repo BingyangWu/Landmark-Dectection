@@ -4,8 +4,8 @@ import numpy as np
 import torch.utils.data as td
 import pandas as pd
 
-from csl_common.utils import log, cropping, ds_utils, geometry
-from csl_common.vis import vis
+from utils import log, geometry, nn
+from utils import vis
 from datasets import handdataset
 import config as cfg
 import json
@@ -142,9 +142,9 @@ if __name__ == "__main__":
     # extract_main()
     # exit()
     from utils.nn import Batch
-    import utils.common as util
+    from utils import random
 
-    util.init_random()
+    random.init_random()
 
     ds = VggFace2(
         train=True,
@@ -163,5 +163,5 @@ if __name__ == "__main__":
         t = time.perf_counter()
         batch = Batch(data, gpu=False)
         print("t Batch:", time.perf_counter() - t)
-        images = ds_utils.denormalized(batch.images)
+        images = nn.denormalized(batch.images)
         vis.vis_square(images, fx=f, fy=f, normalize=False, nCols=10, wait=0)

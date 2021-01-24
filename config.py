@@ -1,5 +1,5 @@
 import os
-from ml_utilities.transform import Normalizer
+from utils.transforms import Normalizer
 
 
 ENCODER_LAYER_NORMALIZATION = "batch"
@@ -62,7 +62,7 @@ def get_dataset_paths(dsname):
         if not path_local:
             path_local = path
         if not os.path.exists(path_local):
-            from csl_common.utils.io_utils import makedirs
+            from utils.io import makedirs
 
             try:
                 makedirs(path_local)

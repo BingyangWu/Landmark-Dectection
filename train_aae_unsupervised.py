@@ -7,9 +7,8 @@ import pandas as pd
 import numpy as np
 import datetime
 
-from csl_common.utils import log
-from csl_common.utils.nn import Batch
-import csl_common.utils.ds_utils as ds_utils
+from utils import log
+from utils.nn import Batch
 from datasets import multi, affectnet, vggface2, wflw, w300
 from constants import TRAIN, VAL
 from networks import aae
@@ -341,8 +340,8 @@ class AAEUnsupervisedTraining(AAETraining):
 def run(args):
 
     if args.seed is not None:
-        from csl_common.utils.common import init_random
-        init_random(args.seed)
+        from utils import random
+        random.init_random(args.seed)
 
     # log.info(json.dumps(vars(args), indent=4))
 
@@ -363,7 +362,7 @@ def run(args):
         datasets_for_phase = []
         for name in dsnames:
             root, cache_root = cfg.get_dataset_paths(name)
-            transform = ds_utils.build_transform(deterministic=not train, daug=args.daug)
+            transform = nn.build_transform(deterministic=not train, daug=args.daug)
             dataset_cls = cfg.get_dataset_class(name)
             ds = dataset_cls(root=root,
                              cache_root=cache_root,

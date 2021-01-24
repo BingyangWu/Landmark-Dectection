@@ -4,7 +4,7 @@ import config as cfg
 from datasets import wflw, w300, aflw
 import aae_training
 from constants import VAL
-from csl_common.utils import log
+from utils import log
 from landmarks import lmconfig
 
 
@@ -22,8 +22,8 @@ class FabrecEval(AAELandmarkTraining):
 def run(args):
 
     if args.seed is not None:
-        from csl_common.utils.common import init_random
-        init_random(args.seed)
+        from utils import random
+        random.init_random(args.seed)
     # log.info(json.dumps(vars(args), indent=4))
 
     datasets = {}
